@@ -1,0 +1,123 @@
+Sub create_files()
+
+Application.ScreenUpdating = False
+
+Dim iName, iPath
+iName = GetUserNameMac
+ 
+'Get Path and Workbook Name
+'iPath = ActiveWorkbook.Path
+iPath = "Macintosh HD:Users:" & iName & ":Desktop:Tour Codes"
+
+Sheets("Data").Select
+
+'find last row
+Dim lastrow
+
+If Cells(2, 1) > 0 Then
+    If Cells(3, 1) > 0 Then
+        Cells(1, 1).Select
+        Selection.End(xlDown).Select
+        lastrow = ActiveCell.Row
+    Else
+        lastrow = 2
+    End If
+Else
+    lastrow = 1
+End If
+
+'sort data
+
+'sort data
+ActiveWorkbook.Worksheets("Data").Sort.SortFields.Clear
+ActiveWorkbook.Worksheets("Data").Sort.SortFields.Add Key:=Range("D:D"), _
+    SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+ActiveWorkbook.Worksheets("Data").Sort.SortFields.Add Key:=Range("C:C"), _
+    SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+ActiveWorkbook.Worksheets("Data").Sort.SortFields.Add Key:=Range("B:B"), _
+    SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+With ActiveWorkbook.Worksheets("Data").Sort
+    .SetRange Range("A:E")
+    .Header = xlYes
+    .MatchCase = False
+    .Orientation = xlTopToBottom
+    .SortMethod = xlPinYin
+    .Apply
+End With
+
+'create files
+Dim r1, ddate, gate, id, cap, firstrow, rowcount, newcode
+r1 = 2
+firstrow = 2
+Do
+    cap = Cells(firstrow, 5).Value
+    ddate = Cells(firstrow, 2).Value
+    gate = Cells(firstrow, 3).Value
+    id = Cells(firstrow, 4).Value
+    rowcount = 0
+    
+    'find rows for next file
+    Do
+        newcode = 0
+        If ddate = Cells(r1, 2).Value And gate = Cells(r1, 3).Value And id = Cells(r1, 4).Value Then
+            'keep going
+        Else
+            'stop and create new file
+            newcode = 1
+        End If
+        r1 = r1 + 1
+        rowcount = rowcount + 1
+    Loop Until rowcount > cap Or newcode = 1
+
+    'copy header
+    'Rows("1:1").Select
+    'Selection.Copy
+    'create file
+    Workbooks.Add
+    'ActiveSheet.Paste
+    
+    Application.DisplayAlerts = False
+    'save file
+    ChDir "Macintosh HD:Users:" & iName & ":Desktop:Tour Codes"
+    ActiveWorkbook.SaveAs Filename:= _
+    iPath & ":" & id & "_" & Format(ddate, "yyyy-mm-dd") & "_" & gate & "_" & firstrow & ".csv", _
+        FileFormat:=xlCSV, CreateBackup:=False
+    'ActiveWorkbook.SaveAs iPath & ":" & merchWk
+    'ActiveWorkbook.SaveAs iPath & "/" & merchWk
+    Windows("Gate 1 codes macro.xlsm").Activate
+    
+    'copy rows to file
+    'Rows(firstrow & ":" & firstrow + rowcount - 2).Select
+    Range(Cells(firstrow, 1), Cells(firstrow + rowcount - 2, 1)).Select
+    Selection.Copy
+    Windows(id & "_" & Format(ddate, "yyyy-mm-dd") & "_" & gate & "_" & firstrow & ".csv").Activate
+    'Cells(2, 1).Select
+    Cells(1, 1).Select
+    ActiveSheet.Paste
+    'Columns("A:E").EntireColumn.AutoFit
+    Columns("A:A").EntireColumn.AutoFit
+    
+    'save file
+    Cells(1, 1).Select
+    ActiveWorkbook.Save
+    ActiveWindow.Close
+    Application.DisplayAlerts = True
+    Windows("Gate 1 codes macro.xlsm").Activate
+    firstrow = r1 - 1
+    r1 = firstrow
+    
+Loop Until r1 > lastrow
+
+End Sub
+
+
+Function GetUserNameMac() As String
+
+Dim sMyScript As String
+
+sMyScript = "set userName to short user name of (system info)" & vbNewLine & "return userName"
+    
+GetUserNameMac = MacScript(sMyScript)
+
+End Function
+
